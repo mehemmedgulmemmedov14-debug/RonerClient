@@ -1,4 +1,4 @@
-package com.example;
+package com.example.client;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -79,3 +79,4 @@ public class ExampleModClient implements ClientModInitializer {
         }
     }
 }
+        
