@@ -1,14 +1,4 @@
-src/main/java/com/ronerclient/
-├── RonerClient.java
-├── gui/
-│   └── RonerGuiScreen.java
-└── module/
-    ├── Module.java
-    └── impl/
-        ├── AimAssistModule.java
-        ├── TriggerbotModule.java
-        ├── ESPModule.java
-        └── FOVModule.java
+
 package com.ronerclient.gui;
 
 import com.ronerclient.RonerClient;
