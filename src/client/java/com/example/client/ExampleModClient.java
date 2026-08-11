@@ -1,82 +1,111 @@
-package com.example.client;
+src/main/java/com/ronerclient/
+├── RonerClient.java
+├── gui/
+│   └── RonerGuiScreen.java
+└── module/
+    ├── Module.java
+    └── impl/
+        ├── AimAssistModule.java
+        ├── TriggerbotModule.java
+        ├── ESPModule.java
+        └── FOVModule.java
+package com.ronerclient.gui;
 
+import com.ronerclient.RonerClient;
+import com.ronerclient.module.Module;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.text.Text;
+
+public class RonerGuiScreen extends Screen {
+
+    public RonerGuiScreen() {
+        super(Text.literal("RonerClient Menyu"));
+    }
+
+    @Override
+    protected void init() {
+        int yPos = 50; // Düymələrin başlayacağı Y koordinatı
+
+        for (Module module : RonerClient.modules) {
+            ButtonWidget button = ButtonWidget.builder(
+                Text.literal(module.getName() + " -> " + (module.isEnabled() ? "§a[AÇIK]" : "§c[BAĞLI]")),
+                btn -> {
+                    module.toggle(); // Modulu yandırır/söndürür
+                    btn.setMessage(Text.literal(module.getName() + " -> " + (module.isEnabled() ? "§a[AÇIK]" : "§c[BAĞLI]")));
+                }
+            )
+            .dimensions(this.width / 2 - 100, yPos, 200, 20)
+            .build();
+
+            this.addDrawableChild(button);
+            yPos += 25; // Hər düymə arasında məsafə
+        }
+    }
+
+    @Override
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        this.renderBackground(context);
+        context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 20, 0xFFFFFF);
+        super.render(context, mouseX, mouseY, delta);
+    }
+
+    @Override
+    public boolean shouldPause() {
+        return false; // Menyu açılanda oyunun arxa fonda dayanmamasını (Pause olmamasını) təmin edir
+    }
+}
+package com.ronerclient;
+
+import com.ronerclient.gui.RonerGuiScreen;
+import com.ronerclient.module.Module;
+import com.ronerclient.module.impl.*;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
-public class ExampleModClient implements ClientModInitializer {
-    public static KeyBinding menuKey;
-    public static boolean aimAssist = false;
-    public static boolean triggerbot = false;
-    public static boolean hitbox = false;
-    public static boolean esp = false;
+import java.util.ArrayList;
+import java.util.List;
+
+public class RonerClient implements ClientModInitializer {
+    public static final List<Module> modules = new ArrayList<>();
+    private static KeyBinding openGuiKey;
 
     @Override
     public void onInitializeClient() {
-        menuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-            "key.ronerclient.menu",
-            InputUtil.Type.KEYSYM,
-            GLFW.GLFW_KEY_M,
-            "category.ronerclient"
+        // Modulları siyahıya əlavə edirik
+        modules.add(new AimAssistModule());
+        modules.add(new TriggerbotModule());
+        modules.add(new ESPModule());
+        modules.add(new FOVModule());
+
+        // 'M' düyməsini Minecraft klaviatura tənzimləmələrinə qeydiyyata alırıq
+        openGuiKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "RonerClient Menyusunu Aç",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_M,
+                "RonerClient"
         ));
 
+        // Oyun dövrəsində (tick) düyməni və modulları dinləyirik
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            while (menuKey.wasPressed()) {
-                if (client.player != null) {
-                    client.setScreen(new CheatMenuScreen());
+            if (client.player == null || client.world == null) return;
+
+            // 'M' düyməsinə basılıbsa menyunu açır
+            while (openGuiKey.wasPressed()) {
+                client.setScreen(new RonerGuiScreen());
+            }
+
+            // Aktiv olan modulların xüsusiyyətlərini işlədir
+            for (Module module : modules) {
+                if (module.isEnabled()) {
+                    module.onTick();
                 }
             }
         });
     }
-
-    public static class CheatMenuScreen extends Screen {
-        public CheatMenuScreen() {
-            super(Text.of("RonerClient Menu"));
-        }
-
-        @Override
-        protected void init() {
-            int x = this.width / 2 - 100;
-            int y = this.height / 2 - 60;
-
-            this.addDrawableChild(ButtonWidget.builder(
-                Text.of("Aim Assist: " + (aimAssist ? "ACIQ" : "QAPALI")),
-                btn -> {
-                    aimAssist = !aimAssist;
-                    btn.setMessage(Text.of("Aim Assist: " + (aimAssist ? "ACIQ" : "QAPALI")));
-                }
-            ).dimensions(x, y, 200, 20).build());
-
-            this.addDrawableChild(ButtonWidget.builder(
-                Text.of("Triggerbot: " + (triggerbot ? "ACIQ" : "QAPALI")),
-                btn -> {
-                    triggerbot = !triggerbot;
-                    btn.setMessage(Text.of("Triggerbot: " + (triggerbot ? "ACIQ" : "QAPALI")));
-                }
-            ).dimensions(x, y + 25, 200, 20).build());
-
-            this.addDrawableChild(ButtonWidget.builder(
-                Text.of("Hitbox: " + (hitbox ? "ACIQ" : "QAPALI")),
-                btn -> {
-                    hitbox = !hitbox;
-                    btn.setMessage(Text.of("Hitbox: " + (hitbox ? "ACIQ" : "QAPALI")));
-                }
-            ).dimensions(x, y + 50, 200, 20).build());
-
-            this.addDrawableChild(ButtonWidget.builder(
-                Text.of("ESP: " + (esp ? "ACIQ" : "QAPALI")),
-                btn -> {
-                    esp = !esp;
-                    btn.setMessage(Text.of("ESP: " + (esp ? "ACIQ" : "QAPALI")));
-                }
-            ).dimensions(x, y + 75, 200, 20).build());
-        }
-    }
 }
-        
